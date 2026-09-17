@@ -83,6 +83,7 @@
             [self.window.contentView mouseDown:event];
             break;
         case NSEventTypeRightMouseDragged:
+        case NSEventTypeLeftMouseDragged:
             [self.window.contentView mouseDragged:event];
             break;
         case NSEventTypeRightMouseUp:

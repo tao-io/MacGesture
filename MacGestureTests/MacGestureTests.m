@@ -1,34 +1,55 @@
-//
-//  MenuBarAppTests.m
-//  MenuBarAppTests
-//
-//  Created by Charles Ross on 11/2/13.
-//  Copyright (c) 2013 MacGesture. All rights reserved.
-//
-
 #import <XCTest/XCTest.h>
+#import "MGGestureEventRouter.h"
 
-@interface MenuBarAppTests : XCTestCase
-
+@interface MacGestureTests : XCTestCase
 @end
 
-@implementation MenuBarAppTests
+@implementation MacGestureTests
 
-- (void)setUp
-{
-    [super setUp];
-    // Put setup code here. This method is called before the invocation of each test method in the class.
+- (void)testEventTapMaskIncludesLeftMouseDraggedAndExistingEvents {
+    CGEventMask mask = MGGestureEventTapMask();
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventRightMouseDown)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventRightMouseDragged)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventRightMouseUp)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventLeftMouseDown)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventLeftMouseDragged)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventScrollWheel)) != 0);
 }
 
-- (void)tearDown
-{
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
-    [super tearDown];
+- (void)testOrdinaryLeftDragDoesNotUpdateGesture {
+    XCTAssertFalse(MGShouldUpdateGestureFromLeftMouseDrag(NO, NO));
+    XCTAssertFalse(MGShouldUpdateGestureFromLeftMouseDrag(NO, YES));
+    XCTAssertFalse(MGShouldUpdateGestureFromLeftMouseDrag(YES, NO));
 }
 
-- (void)testExample
-{
-    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
+- (void)testLeftDragUpdatesGestureOnlyWhileRightButtonSessionIsActive {
+    XCTAssertTrue(MGShouldUpdateGestureFromLeftMouseDrag(YES, YES));
+}
+
+- (void)testChordThenUpwardLeftDragProducesZU {
+    NSMutableString *gesture = [NSMutableString string];
+    XCTAssertTrue(MGAppendGestureCharacter(gesture, 'Z', YES));
+    XCTAssertEqualObjects(gesture, @"Z");
+
+    unichar dir = MGDirectionForMovement(0, 40, 20);
+    XCTAssertEqual(dir, (unichar)'U');
+    XCTAssertTrue(MGAppendGestureCharacter(gesture, dir, NO));
+    XCTAssertEqualObjects(gesture, @"ZU");
+}
+
+- (void)testShortMovementDoesNotAppendDirection {
+    XCTAssertEqual(MGDirectionForMovement(3, 4, 20), (unichar)0);
+    NSMutableString *gesture = [NSMutableString stringWithString:@"Z"];
+    XCTAssertFalse(MGAppendGestureCharacter(gesture, 0, NO));
+    XCTAssertEqualObjects(gesture, @"Z");
+}
+
+- (void)testRepeatedDirectionIsIgnoredUnlessAllowed {
+    NSMutableString *gesture = [NSMutableString stringWithString:@"U"];
+    XCTAssertFalse(MGAppendGestureCharacter(gesture, 'U', NO));
+    XCTAssertEqualObjects(gesture, @"U");
+    XCTAssertTrue(MGAppendGestureCharacter(gesture, 'U', YES));
+    XCTAssertEqualObjects(gesture, @"UU");
 }
 
 @end

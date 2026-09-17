@@ -4,6 +4,7 @@
 #import "CanvasWindowController.h"
 #import "BlockAllowFilter.h"
 #import "RulesList.h"
+#import "MGGestureEventRouter.h"
 #import "utils.h"
 
 @interface AppDelegate () <AppPrefsDelegate>
@@ -88,9 +89,7 @@ static NSUserDefaults *defaults;
 
     // Accessibility permission check & alert
 
-    CGEventMask eventMask = CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventRightMouseDragged) |
-                            CGEventMaskBit(kCGEventRightMouseUp) | CGEventMaskBit(kCGEventLeftMouseDown) |
-                            CGEventMaskBit(kCGEventScrollWheel);
+    CGEventMask eventMask = MGGestureEventTapMask();
     mouseEventTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, eventMask, mouseEventCallback, NULL);
 
     const void * keys[] = { kAXTrustedCheckOptionPrompt };
@@ -249,19 +248,11 @@ static NSUserDefaults *defaults;
 }
 
 static void addDirection(unichar dir, bool allowSameDirection) {
-    unichar lastDirectionChar;
-    if (direction.length > 0) {
-        lastDirectionChar = [direction characterAtIndex:direction.length - 1];
-    } else {
-        lastDirectionChar = ' ';
+    if (!MGAppendGestureCharacter(direction, dir, allowSameDirection)) {
+        return;
     }
-    
-    if (dir != lastDirectionChar || allowSameDirection) {
-        NSString *temp = [NSString stringWithCharacters:&dir length:1];
-        [direction appendString:temp];
-        [windowController writeDirection:direction];
-        handleGesture(NO);
-    }
+    [windowController writeDirection:direction];
+    handleGesture(NO);
 }
 
 static void updateDirections(NSEvent *event) {
@@ -269,37 +260,21 @@ static void updateDirections(NSEvent *event) {
     NSPoint newLocation = event.locationInWindow;
     double deltaX = newLocation.x - lastLocation.x;
     double deltaY = newLocation.y - lastLocation.y;
-    double absX = fabs(deltaX);
-    double absY = fabs(deltaY);
     double threshold = [defaults doubleForKey:@"directionDetectionThreshold"];
-    if (absX + absY < threshold) {
+    unichar dir = MGDirectionForMovement(deltaX, deltaY, threshold);
+    if (dir == 0) {
         return; // ignore short distance
     }
-    
+
     lastLocation = event.locationInWindow;
-    
-    if (absX > absY) {
-        if (deltaX > 0) {
-            addDirection('R', false);
-            eventTriggered = YES;
-            return;
-        } else {
-            addDirection('L', false);
-            eventTriggered = YES;
-            return;
-        }
-    } else {
-        if (deltaY > 0) {
-            addDirection('U', false);
-            eventTriggered = YES;
-            return;
-        } else {
-            addDirection('D', false);
-            eventTriggered = YES;
-            return;
-        }
-    }
-    
+    addDirection(dir, false);
+    eventTriggered = YES;
+}
+
+static void applyGestureMotion(CGEventRef event) {
+    NSEvent *mouseEvent = [NSEvent eventWithCGEvent:event];
+    [windowController handleMouseEvent:mouseEvent];
+    updateDirections(mouseEvent);
 }
 
 static bool handleGesture(BOOL lastGesture) {
@@ -412,9 +387,8 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
                 }
                 mouseDraggedEvent = event;
                 CFRetain(mouseDraggedEvent);
-                
-                [windowController handleMouseEvent:mouseEvent];
-                updateDirections(mouseEvent);
+
+                applyGestureMotion(event);
             }
             break;
         case kCGEventRightMouseUp: {
@@ -485,6 +459,16 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             CGEventTapEnable(mouseEventTap, true); // re-enable
             // windowController.enable = isEnable;
             break;
+        case kCGEventLeftMouseDragged: {
+            DebugLog(@"kCGEventLeftMouseDragged");
+            if (!MGShouldUpdateGestureFromLeftMouseDrag(shouldShow, mouseDownEvent != NULL)) {
+                return event;
+            }
+            // Do not store this as mouseDraggedEvent: that buffer is the
+            // right-button click-replay path and must stay a right-drag.
+            applyGestureMotion(event);
+            break;
+        }
         case kCGEventLeftMouseDown: {
             if (!shouldShow || !mouseDownEvent) {
                 return event;
