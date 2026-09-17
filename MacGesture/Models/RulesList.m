@@ -114,7 +114,7 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
     if (flags == kCGEventFlagMaskControl && [[NSUserDefaults standardUserDefaults] boolForKey:@"invertFnWhenControl"]) {
         flags ^= kCGEventFlagMaskSecondaryFn;
     }
-    
+
     bool hasShift = false;
     if (flags & kCGEventFlagMaskShift) {
         hasShift = true;
@@ -139,7 +139,7 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
         CGEventPost(kCGHIDEventTap, event);
         CFRelease(event);
     }
-    
+
     CFRelease(source);
 }
 
