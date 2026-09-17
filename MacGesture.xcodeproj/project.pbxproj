@@ -10,6 +10,8 @@
 		0681E208290D3AAB00A17715 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 0681E207290D3AAB00A17715 /* Sparkle */; };
 		0681E20B290D3AC600A17715 /* ShortcutRecorder in Frameworks */ = {isa = PBXBuildFile; productRef = 0681E20A290D3AC600A17715 /* ShortcutRecorder */; };
 		06B87A1A27383985003239A5 /* Foundation+BetterNSCopying.m in Sources */ = {isa = PBXBuildFile; fileRef = 06B87A1827383985003239A5 /* Foundation+BetterNSCopying.m */; };
+		A7C31B2E9F4D4A11B8E21C01 /* MGGestureEventRouter.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */; };
+		A7C31B2E9F4D4A11B8E21C04 /* MGGestureEventRouter.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */; };
 		1381E4AC1824E7E800E815F5 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1381E4AB1824E7E800E815F5 /* Cocoa.framework */; };
 		1381E4B81824E7E800E815F5 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1381E4B71824E7E800E815F5 /* main.m */; };
 		1381E4BF1824E7E800E815F5 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1381E4BE1824E7E800E815F5 /* AppDelegate.m */; };
@@ -46,19 +48,11 @@
 		D0B19D481E384BAE00619F4A /* AppleScriptCommand.m in Sources */ = {isa = PBXBuildFile; fileRef = D0B19D471E384BAE00619F4A /* AppleScriptCommand.m */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		1381E4CD1824E7E800E815F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1381E4A01824E7E800E815F5 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1381E4A71824E7E800E815F5;
-			remoteInfo = MacGesture;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		06B87A1827383985003239A5 /* Foundation+BetterNSCopying.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Foundation+BetterNSCopying.m"; sourceTree = "<group>"; };
 		06B87A1927383985003239A5 /* Foundation+BetterNSCopying.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Foundation+BetterNSCopying.h"; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C02 /* MGGestureEventRouter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MGGestureEventRouter.h; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MGGestureEventRouter.m; sourceTree = "<group>"; };
 		1381E4AB1824E7E800E815F5 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		1381E4B31824E7E800E815F5 /* MacGesture-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "MacGesture-Info.plist"; sourceTree = "<group>"; };
 		1381E4B71824E7E800E815F5 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = main.m; sourceTree = "<group>"; usesTabs = 0; };
@@ -297,6 +291,8 @@
 				06B87A1827383985003239A5 /* Foundation+BetterNSCopying.m */,
 				2641846D9674154891849969 /* SRRecorderControlWithTagid.h */,
 				264180FBF385AF13387254C2 /* SRRecorderControlWithTagid.m */,
+				A7C31B2E9F4D4A11B8E21C02 /* MGGestureEventRouter.h */,
+				A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */,
 				26418C419A597E159158ED0D /* utils.h */,
 				26418F4D8FB5BC803E3EB850 /* utils.m */,
 			);
@@ -339,7 +335,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				1381E4CE1824E7E800E815F5 /* PBXTargetDependency */,
 			);
 			name = MacGestureTests;
 			productName = MacGestureTests;
@@ -357,9 +352,6 @@
 				TargetAttributes = {
 					1381E4A71824E7E800E815F5 = {
 						ProvisioningStyle = Automatic;
-					};
-					1381E4C81824E7E800E815F5 = {
-						TestTargetID = 1381E4A71824E7E800E815F5;
 					};
 				};
 			};
@@ -443,6 +435,7 @@
 			files = (
 				1381E4B81824E7E800E815F5 /* main.m in Sources */,
 				1381E4BF1824E7E800E815F5 /* AppDelegate.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C01 /* MGGestureEventRouter.m in Sources */,
 				88331A3B1C9D22290064ADD5 /* AppleScriptsList.m in Sources */,
 				06B87A1A27383985003239A5 /* Foundation+BetterNSCopying.m in Sources */,
 				BB004AFA25BD001900A7373F /* DBPrefsWindowController.m in Sources */,
@@ -466,18 +459,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				1381E4D61824E7E800E815F5 /* MacGestureTests.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C04 /* MGGestureEventRouter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		1381E4CE1824E7E800E815F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1381E4A71824E7E800E815F5 /* MacGesture */;
-			targetProxy = 1381E4CD1824E7E800E815F5 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		880AA7591CA5738A006E7A74 /* Preferences.xib */ = {
@@ -701,16 +687,18 @@
 		1381E4DD1824E7E800E815F5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT).app/Contents/MacOS/$(PRODUCT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/MacGesture/Helpers",
+				);
 				INFOPLIST_FILE = "$(PRODUCT)Tests/Supporting Files/$(PRODUCT)Tests-Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE)Tests";
 				PRODUCT_NAME = "$(PRODUCT)Tests";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -718,16 +706,18 @@
 		1381E4DE1824E7E800E815F5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT).app/Contents/MacOS/$(PRODUCT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/MacGesture/Helpers",
+				);
 				INFOPLIST_FILE = "$(PRODUCT)Tests/Supporting Files/$(PRODUCT)Tests-Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE)Tests";
 				PRODUCT_NAME = "$(PRODUCT)Tests";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
