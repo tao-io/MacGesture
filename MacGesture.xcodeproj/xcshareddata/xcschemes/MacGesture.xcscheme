@@ -20,6 +20,20 @@
                ReferencedContainer = "container:MacGesture.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "1381E4C81824E7E800E815F5"
+               BuildableName = "MacGestureTests"
+               BlueprintName = "MacGestureTests"
+               ReferencedContainer = "container:MacGesture.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
