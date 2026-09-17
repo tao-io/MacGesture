@@ -34,8 +34,11 @@ static BOOL MGIsModifierKeyCode(CGKeyCode keyCode) {
 }
 
 void MGConfigureShortcutEvent(CGEventRef event, CGEventSourceRef source, CGKeyCode keyCode, CGEventFlags flags) {
+    if (event == NULL) {
+        return;
+    }
     CGEventSetFlags(event, flags);
-    if (MGIsModifierKeyCode(keyCode) || event == NULL || source == NULL) {
+    if (MGIsModifierKeyCode(keyCode) || source == NULL) {
         return;
     }
     // Option remaps C to ç. Command shortcuts must keep the unmodified

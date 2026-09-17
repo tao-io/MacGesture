@@ -21,8 +21,8 @@ NSUInteger MGKeyStrokesForShortcut(CGKeyCode keyCode,
                                    MGKeyStroke *outStrokes,
                                    NSUInteger capacity);
 
-void MGConfigureShortcutEvent(CGEventRef event,
-                              CGEventSourceRef source,
+void MGConfigureShortcutEvent(CGEventRef _Nullable event,
+                              CGEventSourceRef _Nullable source,
                               CGKeyCode keyCode,
                               CGEventFlags flags);
 

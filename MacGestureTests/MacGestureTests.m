@@ -118,4 +118,8 @@
     CFRelease(source);
 }
 
+- (void)testConfigureShortcutEventIgnoresNullEvent {
+    XCTAssertNoThrow(MGConfigureShortcutEvent(NULL, NULL, kVK_ANSI_C, kCGEventFlagMaskCommand));
+}
+
 @end
