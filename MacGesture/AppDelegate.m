@@ -25,6 +25,7 @@ static AppPrefsWindowController *_preferencesWindowController;
 static NSTimeInterval lastMouseWheelEventTime = 0;
 static BOOL eventTriggered;
 static NSUserDefaults *defaults;
+static MGLeftChordState leftChord;
 
 + (AppDelegate *)appDelegate {
     return (AppDelegate *) [[NSApplication sharedApplication] delegate];
@@ -316,6 +317,7 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             
             if (mouseDownEvent) { // mouseDownEvent may not release when kCGEventTapDisabledByTimeout
                 resetDirection();
+                MGLeftChordClearSession(&leftChord);
                 
                 CGPoint location = CGEventGetLocation(mouseDownEvent);
                 CGEventPost(kCGSessionEventTap, mouseDownEvent);
@@ -336,6 +338,10 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             
             [windowController handleMouseEvent:mouseEvent];
             lastLocation = mouseEvent.locationInWindow;
+            if (MGLeftChordConsumeZ(&leftChord)) {
+                addDirection('Z', true);
+                eventTriggered = YES;
+            }
             break;
         case kCGEventRightMouseDragged:
             DebugLog(@"kCGEventRightMouseDragged");
@@ -377,6 +383,7 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
                         mouseDownEvent = mouseDraggedEvent = NULL;
                         shouldShow = NO;
                         resetDirection();
+                        MGLeftChordClearSession(&leftChord);
                         break;
                     }
                     
@@ -425,6 +432,7 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             shouldShow = NO;
             
             resetDirection();
+            MGLeftChordClearSession(&leftChord);
             break;
         }
         case kCGEventScrollWheel: {
@@ -470,12 +478,21 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             break;
         }
         case kCGEventLeftMouseDown: {
+            DebugLog(@"kCGEventLeftMouseDown");
+            MGLeftChordSetButtonDown(&leftChord, YES);
             if (!shouldShow || !mouseDownEvent) {
                 return event;
             }
-            addDirection('Z', true);
-            eventTriggered = YES;
+            if (MGLeftChordConsumeZ(&leftChord)) {
+                addDirection('Z', true);
+                eventTriggered = YES;
+            }
             break;
+        }
+        case kCGEventLeftMouseUp: {
+            DebugLog(@"kCGEventLeftMouseUp");
+            MGLeftChordSetButtonDown(&leftChord, NO);
+            return event;
         }
         default:
             return event;
