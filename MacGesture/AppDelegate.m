@@ -5,6 +5,7 @@
 #import "BlockAllowFilter.h"
 #import "RulesList.h"
 #import "MGGestureEventRouter.h"
+#import "MGLinkGestureContext.h"
 #import "utils.h"
 
 @interface AppDelegate () <AppPrefsDelegate>
@@ -26,6 +27,7 @@ static NSTimeInterval lastMouseWheelEventTime = 0;
 static BOOL eventTriggered;
 static NSUserDefaults *defaults;
 static MGLeftChordState leftChord;
+static MGLinkGestureContext *gestureContext;
 
 + (AppDelegate *)appDelegate {
     return (AppDelegate *) [[NSApplication sharedApplication] delegate];
@@ -123,6 +125,7 @@ static MGLeftChordState leftChord;
     }
 
     windowController = [CanvasWindowController new];
+    gestureContext = [MGLinkGestureContext new];
     direction = [NSMutableString string];
     _enabled = YES;
 
@@ -284,6 +287,7 @@ static bool handleGesture(BOOL lastGesture) {
 
 void resetDirection(void) {
     [direction setString:@""];
+    [gestureContext clear];
 }
 
 // See https://developer.apple.com/library/mac/documentation/Carbon/Reference/QuartzEventServicesRef/#//apple_ref/c/tdef/CGEventTapCallBack
@@ -309,6 +313,7 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
 //                            CGEventPost(kCGSessionEventTap, mouseDraggedEvent);
 //                        }
                     shouldShow = NO;
+                    [gestureContext clear];
                     return event;
                 }
                 shouldShow = YES;
@@ -332,6 +337,8 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
                 CFRelease(event_up);
                 mouseDownEvent = mouseDraggedEvent = NULL;
             }
+            [gestureContext clear];
+            [gestureContext beginWithLinkURL:MGCopyLinkURLAtPoint(CGEventGetLocation(event))];
             mouseEvent = [NSEvent eventWithCGEvent:event];
             mouseDownEvent = event;
             CFRetain(mouseDownEvent);
@@ -464,6 +471,8 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
             DebugLog(@"kCGEventTapDisabledByUserInput");
         case kCGEventTapDisabledByTimeout:
             DebugLog(@"kCGEventTapDisabledByTimeout");
+            resetDirection();
+            MGLeftChordClearSession(&leftChord);
             CGEventTapEnable(mouseEventTap, true); // re-enable
             // windowController.enable = isEnable;
             break;

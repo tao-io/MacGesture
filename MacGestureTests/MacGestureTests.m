@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "MGGestureEventRouter.h"
+#import "MGLinkGestureContext.h"
 
 @interface MacGestureTests : XCTestCase
 @end
@@ -134,6 +135,58 @@ static NSString *MGGestureFromTapEvents(const CGEventType *events, NSUInteger co
     XCTAssertEqualObjects(gesture, @"U");
     XCTAssertTrue(MGAppendGestureCharacter(gesture, 'U', YES));
     XCTAssertEqualObjects(gesture, @"UU");
+}
+
+- (void)testNestedAccessibilityChildResolvesParentLinkURL {
+    NSDictionary *link = @{ @"role": @"AXLink", @"url": @"https://example.com/path" };
+    NSDictionary *child = @{ @"role": @"AXStaticText", @"parent": link };
+
+    NSURL *url = MGLinkURLFromAccessibilityElement(child, ^id(NSDictionary *element, NSString *attribute) {
+        return element[attribute];
+    });
+
+    XCTAssertEqualObjects(url.absoluteString, @"https://example.com/path");
+}
+
+- (void)testNonLinkAccessibilityElementHasNoURL {
+    NSDictionary *element = @{ @"role": @"AXButton", @"url": @"https://example.com/not-a-link" };
+
+    NSURL *url = MGLinkURLFromAccessibilityElement(element, ^id(NSDictionary *item, NSString *attribute) {
+        return item[attribute];
+    });
+
+    XCTAssertNil(url);
+}
+
+- (void)testGestureContextFreezesInitialLinkUntilCleared {
+    MGLinkGestureContext *context = [MGLinkGestureContext new];
+    NSURL *initialURL = [NSURL URLWithString:@"https://example.com/initial"];
+
+    [context beginWithLinkURL:initialURL];
+    [context beginWithLinkURL:[NSURL URLWithString:@"https://example.com/moved"]];
+
+    XCTAssertEqualObjects(context.linkURL, initialURL);
+}
+
+- (void)testGestureContextClearsLinkAndAcceptsNextSession {
+    MGLinkGestureContext *context = [MGLinkGestureContext new];
+    [context beginWithLinkURL:[NSURL URLWithString:@"https://example.com/first"]];
+    [context clear];
+
+    XCTAssertNil(context.linkURL);
+
+    NSURL *nextURL = [NSURL URLWithString:@"https://example.com/next"];
+    [context beginWithLinkURL:nextURL];
+    XCTAssertEqualObjects(context.linkURL, nextURL);
+}
+
+- (void)testGestureContextFreezesMissingInitialLink {
+    MGLinkGestureContext *context = [MGLinkGestureContext new];
+    [context beginWithLinkURL:nil];
+    [context beginWithLinkURL:[NSURL URLWithString:@"https://example.com/moved"]];
+
+    XCTAssertTrue(context.isActive);
+    XCTAssertNil(context.linkURL);
 }
 
 @end
