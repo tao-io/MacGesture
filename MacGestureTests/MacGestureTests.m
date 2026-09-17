@@ -4,6 +4,51 @@
 @interface MacGestureTests : XCTestCase
 @end
 
+static NSString *MGGestureFromTapEvents(const CGEventType *events, NSUInteger count) {
+    MGLeftChordState chord = {0};
+    BOOL sessionActive = NO;
+    NSMutableString *gesture = [NSMutableString string];
+    const double threshold = 20;
+    for (NSUInteger i = 0; i < count; i++) {
+        switch (events[i]) {
+            case kCGEventLeftMouseDown:
+                MGLeftChordSetButtonDown(&chord, YES);
+                if (sessionActive && MGLeftChordConsumeZ(&chord)) {
+                    MGAppendGestureCharacter(gesture, 'Z', YES);
+                }
+                break;
+            case kCGEventLeftMouseUp:
+                MGLeftChordSetButtonDown(&chord, NO);
+                break;
+            case kCGEventRightMouseDown:
+                sessionActive = YES;
+                if (MGLeftChordConsumeZ(&chord)) {
+                    MGAppendGestureCharacter(gesture, 'Z', YES);
+                }
+                break;
+            case kCGEventRightMouseUp:
+                sessionActive = NO;
+                MGLeftChordClearSession(&chord);
+                break;
+            case kCGEventLeftMouseDragged:
+                if (!MGShouldUpdateGestureFromLeftMouseDrag(sessionActive, sessionActive)) {
+                    break;
+                }
+                MGAppendGestureCharacter(gesture, MGDirectionForMovement(0, 40, threshold), NO);
+                break;
+            case kCGEventRightMouseDragged:
+                if (!sessionActive) {
+                    break;
+                }
+                MGAppendGestureCharacter(gesture, MGDirectionForMovement(0, 40, threshold), NO);
+                break;
+            default:
+                break;
+        }
+    }
+    return [gesture copy];
+}
+
 @implementation MacGestureTests
 
 - (void)testEventTapMaskIncludesLeftMouseDraggedAndExistingEvents {
@@ -12,6 +57,7 @@
     XCTAssertTrue((mask & CGEventMaskBit(kCGEventRightMouseDragged)) != 0);
     XCTAssertTrue((mask & CGEventMaskBit(kCGEventRightMouseUp)) != 0);
     XCTAssertTrue((mask & CGEventMaskBit(kCGEventLeftMouseDown)) != 0);
+    XCTAssertTrue((mask & CGEventMaskBit(kCGEventLeftMouseUp)) != 0);
     XCTAssertTrue((mask & CGEventMaskBit(kCGEventLeftMouseDragged)) != 0);
     XCTAssertTrue((mask & CGEventMaskBit(kCGEventScrollWheel)) != 0);
 }
@@ -35,6 +81,44 @@
     XCTAssertEqual(dir, (unichar)'U');
     XCTAssertTrue(MGAppendGestureCharacter(gesture, dir, NO));
     XCTAssertEqualObjects(gesture, @"ZU");
+}
+
+- (void)testLeftFirstChordThenUpwardDragProducesZU {
+    const CGEventType events[] = {
+        kCGEventLeftMouseDown,
+        kCGEventRightMouseDown,
+        kCGEventLeftMouseDragged,
+    };
+    XCTAssertEqualObjects(MGGestureFromTapEvents(events, 3), @"ZU");
+}
+
+- (void)testRightFirstChordThenUpwardDragProducesZU {
+    const CGEventType events[] = {
+        kCGEventRightMouseDown,
+        kCGEventLeftMouseDown,
+        kCGEventLeftMouseDragged,
+    };
+    XCTAssertEqualObjects(MGGestureFromTapEvents(events, 3), @"ZU");
+}
+
+- (void)testLeftFirstChordSeedsOnlyOneZ {
+    const CGEventType events[] = {
+        kCGEventLeftMouseDown,
+        kCGEventRightMouseDown,
+        kCGEventLeftMouseDown,
+        kCGEventLeftMouseDragged,
+    };
+    XCTAssertEqualObjects(MGGestureFromTapEvents(events, 4), @"ZU");
+}
+
+- (void)testLeftUpClearsChordSoLaterRightOnlyGestureHasNoZ {
+    const CGEventType events[] = {
+        kCGEventLeftMouseDown,
+        kCGEventLeftMouseUp,
+        kCGEventRightMouseDown,
+        kCGEventRightMouseDragged,
+    };
+    XCTAssertEqualObjects(MGGestureFromTapEvents(events, 4), @"U");
 }
 
 - (void)testShortMovementDoesNotAppendDirection {

@@ -6,12 +6,38 @@ CGEventMask MGGestureEventTapMask(void) {
         | CGEventMaskBit(kCGEventRightMouseDragged)
         | CGEventMaskBit(kCGEventRightMouseUp)
         | CGEventMaskBit(kCGEventLeftMouseDown)
+        | CGEventMaskBit(kCGEventLeftMouseUp)
         | CGEventMaskBit(kCGEventLeftMouseDragged)
         | CGEventMaskBit(kCGEventScrollWheel);
 }
 
 BOOL MGGestureSessionIsActive(BOOL shouldShow, BOOL hasRightMouseDown) {
     return shouldShow && hasRightMouseDown;
+}
+
+void MGLeftChordSetButtonDown(MGLeftChordState *state, BOOL isDown) {
+    if (state == NULL) {
+        return;
+    }
+    state->leftButtonDown = isDown;
+    if (!isDown) {
+        state->chordZRecorded = NO;
+    }
+}
+
+BOOL MGLeftChordConsumeZ(MGLeftChordState *state) {
+    if (state == NULL || !state->leftButtonDown || state->chordZRecorded) {
+        return NO;
+    }
+    state->chordZRecorded = YES;
+    return YES;
+}
+
+void MGLeftChordClearSession(MGLeftChordState *state) {
+    if (state == NULL) {
+        return;
+    }
+    state->chordZRecorded = NO;
 }
 
 BOOL MGShouldUpdateGestureFromLeftMouseDrag(BOOL shouldShow, BOOL hasRightMouseDown) {
