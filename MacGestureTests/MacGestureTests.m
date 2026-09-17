@@ -1,6 +1,8 @@
 #import <XCTest/XCTest.h>
 #import "MGGestureEventRouter.h"
 #import "MGLinkGestureContext.h"
+#import "MGLinkActionExecutor.h"
+#import "../MacGesture/Models/RulesList.h"
 
 @interface MacGestureTests : XCTestCase
 @end
@@ -187,6 +189,97 @@ static NSString *MGGestureFromTapEvents(const CGEventType *events, NSUInteger co
 
     XCTAssertTrue(context.isActive);
     XCTAssertNil(context.linkURL);
+}
+
+- (void)testOldRuleDefaultsToAnyContext {
+    RulesList *rules = [RulesList new];
+    [rules addRuleWithDirection:@"R" filter:@"*" filterType:FILTER_TYPE_WILDCARD
+        actionType:ACTION_TYPE_SHORTCUT shortcutKeyCode:0 shortcutFlag:0
+        appleScriptId:nil note:@"fallback"];
+
+    XCTAssertEqual([rules contextScopeAtIndex:0], CONTEXT_SCOPE_ANY);
+    XCTAssertEqual([rules suitedRuleWithGesture:@"R" frontBundle:@"com.example.browser"
+        linkURL:nil isLastGesture:YES], 0);
+}
+
+- (void)testArchivedRuleWithoutContextScopeImportsAsAny {
+    NSMutableDictionary *oldRule = [@{
+        @"direction": @"R", @"filter": @"*", @"filterType": @(FILTER_TYPE_WILDCARD),
+        @"actionType": @(ACTION_TYPE_SHORTCUT), @"shortcut_code": @0,
+        @"shortcut_flag": @0, @"note": @"old", @"enabled": @YES,
+    } mutableCopy];
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:
+        [NSMutableArray arrayWithObject:oldRule]];
+
+    RulesList *rules = [[RulesList alloc] initWithNsData:data];
+
+    XCTAssertEqual([rules contextScopeAtIndex:0], CONTEXT_SCOPE_ANY);
+    XCTAssertNotNil(rules.nsData);
+}
+
+- (void)testMissingLinkSkipsLinkRuleAndUsesNormalFallback {
+    RulesList *rules = [RulesList new];
+    [rules addRuleWithDirection:@"R" filter:@"*" filterType:FILTER_TYPE_WILDCARD
+        contextScope:CONTEXT_SCOPE_LINK actionType:ACTION_TYPE_COPY_LINK_URL
+        shortcutKeyCode:0 shortcutFlag:0 appleScriptId:nil note:@"copy link"];
+    [rules addRuleWithDirection:@"R" filter:@"*" filterType:FILTER_TYPE_WILDCARD
+        actionType:ACTION_TYPE_SHORTCUT shortcutKeyCode:0 shortcutFlag:0
+        appleScriptId:nil note:@"fallback"];
+
+    XCTAssertEqual([rules suitedRuleWithGesture:@"R" frontBundle:@"com.example.browser"
+        linkURL:nil isLastGesture:YES], 1);
+}
+
+- (void)testFrozenLinkMakesLinkRuleFirstApplicableRule {
+    RulesList *rules = [RulesList new];
+    [rules addRuleWithDirection:@"R" filter:@"*" filterType:FILTER_TYPE_WILDCARD
+        contextScope:CONTEXT_SCOPE_LINK actionType:ACTION_TYPE_COPY_LINK_URL
+        shortcutKeyCode:0 shortcutFlag:0 appleScriptId:nil note:@"copy link"];
+    [rules addRuleWithDirection:@"R" filter:@"*" filterType:FILTER_TYPE_WILDCARD
+        actionType:ACTION_TYPE_SHORTCUT shortcutKeyCode:0 shortcutFlag:0
+        appleScriptId:nil note:@"fallback"];
+
+    XCTAssertEqual([rules suitedRuleWithGesture:@"R" frontBundle:@"com.example.browser"
+        linkURL:[NSURL URLWithString:@"https://example.com/link"] isLastGesture:YES], 0);
+}
+
+- (void)testThreeLinkActionsDispatchFrozenAbsoluteURL {
+    NSMutableArray<NSString *> *calls = [NSMutableArray array];
+    MGLinkActionExecutor *executor = [[MGLinkActionExecutor alloc]
+        initWithCopyHandler:^BOOL(NSString *value) {
+            [calls addObject:[@"copy:" stringByAppendingString:value]];
+            return YES;
+        } openHandler:^BOOL(NSURL *url) {
+            [calls addObject:[@"open:" stringByAppendingString:url.absoluteString]];
+            return YES;
+        } newWindowHandler:^BOOL(NSURL *url, NSString *bundleIdentifier) {
+            [calls addObject:[NSString stringWithFormat:@"new:%@:%@", bundleIdentifier,
+                url.absoluteString]];
+            return YES;
+        }];
+    NSURL *url = [NSURL URLWithString:@"https://example.com/a?b=c"];
+
+    XCTAssertTrue([executor performAction:MGLinkURLActionCopy URL:url sourceBundleIdentifier:@"browser"]);
+    XCTAssertTrue([executor performAction:MGLinkURLActionOpen URL:url sourceBundleIdentifier:@"browser"]);
+    XCTAssertTrue([executor performAction:MGLinkURLActionOpenInNewWindow URL:url sourceBundleIdentifier:@"browser"]);
+    XCTAssertEqualObjects(calls, (@[
+        @"copy:https://example.com/a?b=c",
+        @"open:https://example.com/a?b=c",
+        @"new:browser:https://example.com/a?b=c",
+    ]));
+}
+
+- (void)testNewWindowFallsBackToNormalOpenOutsideArc {
+    __block NSUInteger openCount = 0;
+    MGLinkActionExecutor *executor = [[MGLinkActionExecutor alloc]
+        initWithCopyHandler:^BOOL(NSString *value) { return YES; }
+        openHandler:^BOOL(NSURL *url) { openCount++; return YES; }
+        newWindowHandler:^BOOL(NSURL *url, NSString *bundleIdentifier) { return NO; }];
+
+    XCTAssertTrue([executor performAction:MGLinkURLActionOpenInNewWindow
+        URL:[NSURL URLWithString:@"https://example.com"]
+        sourceBundleIdentifier:@"com.apple.Safari"]);
+    XCTAssertEqual(openCount, (NSUInteger)1);
 }
 
 @end

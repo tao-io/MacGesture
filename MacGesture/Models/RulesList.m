@@ -8,6 +8,16 @@
 #import "AppleScriptsList.h"
 #import <Carbon/Carbon.h>
 #import "utils.h"
+#import "MGLinkActionExecutor.h"
+#import "MGLinkGestureContext.h"
+
+@interface RulesList ()
+
+@property (nonatomic, strong) MGLinkActionExecutor *linkActionExecutor;
+
+- (BOOL)ruleAtIndex:(NSUInteger)index appliesToLinkURL:(NSURL *)linkURL;
+
+@end
 
 @implementation RulesList {
     
@@ -29,6 +39,11 @@ NSMutableArray<NSMutableDictionary *> *_rulesList;  // private
 
 - (ActionType)actionTypeAtIndex:(NSUInteger)index {
     return (ActionType) [_rulesList[index][@"actionType"] integerValue];
+}
+
+- (ContextScope)contextScopeAtIndex:(NSUInteger)index {
+    NSString *scope = _rulesList[index][@"contextScope"];
+    return [scope isEqualToString:@"link"] ? CONTEXT_SCOPE_LINK : CONTEXT_SCOPE_ANY;
 }
 
 - (NSUInteger)shortcutKeycodeAtIndex:(NSUInteger)index {
@@ -143,7 +158,7 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
     CFRelease(source);
 }
 
-- (bool)executeActionAt:(NSUInteger)index {
+- (bool)executeActionAt:(NSUInteger)index linkURL:(NSURL *)linkURL frontBundle:(NSString *)frontBundle {
     NSAppleScript *script;
     NSString *appleScriptId;
     NSString *appleScript;
@@ -168,6 +183,15 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
                 [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:userNotification];
             }
             break;
+        case ACTION_TYPE_COPY_LINK_URL:
+            return [self.linkActionExecutor performAction:MGLinkURLActionCopy
+                URL:linkURL sourceBundleIdentifier:frontBundle];
+        case ACTION_TYPE_OPEN_LINK_URL:
+            return [self.linkActionExecutor performAction:MGLinkURLActionOpen
+                URL:linkURL sourceBundleIdentifier:frontBundle];
+        case ACTION_TYPE_OPEN_LINK_URL_IN_NEW_WINDOW:
+            return [self.linkActionExecutor performAction:MGLinkURLActionOpenInNewWindow
+                URL:linkURL sourceBundleIdentifier:frontBundle];
         default:
             break;
     }
@@ -177,11 +201,44 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
 - (NSInteger)suitedRuleWithGesture:(NSString *)gesture {
     NSString *frontApp = frontBundleName();
     for (NSUInteger i = 0; i < [self count]; i++) {
-        if ([self matchFilter:frontApp atIndex:i]) {
+        if ([self ruleAtIndex:i appliesToLinkURL:[MGLinkGestureContext sharedContext].linkURL]
+            && [self matchFilter:frontApp atIndex:i]) {
             //if ([gesture isEqualToString:[self directionAtIndex:i]]) {
             if (wildcardString(gesture, [self directionAtIndex:i], NO)) {
                 return i;
             }
+        }
+    }
+    return -1;
+}
+
+static BOOL isLinkActionType(ActionType actionType) {
+    return actionType == ACTION_TYPE_COPY_LINK_URL
+        || actionType == ACTION_TYPE_OPEN_LINK_URL
+        || actionType == ACTION_TYPE_OPEN_LINK_URL_IN_NEW_WINDOW;
+}
+
+- (BOOL)ruleAtIndex:(NSUInteger)index appliesToLinkURL:(NSURL *)linkURL {
+    if (linkURL == nil && (isLinkActionType([self actionTypeAtIndex:index])
+        || [self contextScopeAtIndex:index] == CONTEXT_SCOPE_LINK)) {
+        return NO;
+    }
+    return YES;
+}
+
+- (NSInteger)suitedRuleWithGesture:(NSString *)gesture
+                       frontBundle:(NSString *)frontBundle
+                           linkURL:(NSURL *)linkURL
+                     isLastGesture:(BOOL)last {
+    for (NSUInteger i = 0; i < [self count]; i++) {
+        if (![self enabledAtIndex:i]
+            || ![self ruleAtIndex:i appliesToLinkURL:linkURL]
+            || !(last ^ [self triggerOnEveryMatchAtIndex:i])
+            || ![self matchFilter:frontBundle atIndex:i]) {
+            continue;
+        }
+        if (wildcardString(gesture, [self directionAtIndex:i], NO)) {
+            return i;
         }
     }
     return -1;
@@ -197,26 +254,20 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
 }
 
 - (BOOL)handleGesture:(NSString *)gesture isLastGesture:(BOOL)last {
-    // if last, only match rules without trigger_on_every_match
-    // if last = false, only match rules with trigger_on_every_match
-    NSString *frontApp = frontBundleName();
-    NSUInteger i = 0;
-    for (; i < [self count]; i++) {
-        if ([self enabledAtIndex:i]) {
-            if ((last ^ [self triggerOnEveryMatchAtIndex:i]) && [self matchFilter:frontApp atIndex:i]) {
-                //if ([gesture isEqualToString:[self directionAtIndex:i]]) {
-                if (wildcardString(gesture, [self directionAtIndex:i], NO)) {
-                    break;
-                }
-            }
-        }
+    return [self handleGesture:gesture isLastGesture:last
+        linkURL:[MGLinkGestureContext sharedContext].linkURL frontBundle:frontBundleName()];
+}
+
+- (BOOL)handleGesture:(NSString *)gesture
+        isLastGesture:(BOOL)last
+              linkURL:(NSURL *)linkURL
+          frontBundle:(NSString *)frontBundle {
+    NSInteger index = [self suitedRuleWithGesture:gesture frontBundle:frontBundle
+        linkURL:linkURL isLastGesture:last];
+    if (index < 0) {
+        return NO;
     }
-    
-    if (i != [self count]) {
-        [self executeActionAt:i];
-        return YES;
-    }
-    return NO;
+    return [self executeActionAt:(NSUInteger)index linkURL:linkURL frontBundle:frontBundle];
 }
 
 - (NSString *)noteAtIndex:(NSUInteger)index {
@@ -244,6 +295,19 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
     [self save];
 }
 
+- (void)setContextScope:(ContextScope)contextScope atIndex:(NSUInteger)index {
+    _rulesList[index][@"contextScope"] = contextScope == CONTEXT_SCOPE_LINK ? @"link" : @"any";
+    [self save];
+}
+
+- (void)setLinkActionType:(ActionType)actionType atIndex:(NSUInteger)index {
+    if (!isLinkActionType(actionType)) {
+        return;
+    }
+    _rulesList[index][@"actionType"] = @(actionType);
+    [self save];
+}
+
 - (void)addRuleWithDirection:(NSString *)direction
                       filter:(NSString *)filter
                   filterType:(FilterType)filterType
@@ -251,12 +315,28 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
              shortcutKeyCode:(NSUInteger)shortcutKeyCode
                 shortcutFlag:(NSUInteger)shortcutFlag
                appleScriptId:(NSString *)appleScriptId
-                        note:(NSString *)note; {
+                        note:(NSString *)note {
+    [self addRuleWithDirection:direction filter:filter filterType:filterType
+        contextScope:CONTEXT_SCOPE_ANY actionType:actionType
+        shortcutKeyCode:shortcutKeyCode shortcutFlag:shortcutFlag
+        appleScriptId:appleScriptId note:note];
+}
+
+- (void)addRuleWithDirection:(NSString *)direction
+                      filter:(NSString *)filter
+                  filterType:(FilterType)filterType
+                contextScope:(ContextScope)contextScope
+                  actionType:(ActionType)actionType
+             shortcutKeyCode:(NSUInteger)shortcutKeyCode
+                shortcutFlag:(NSUInteger)shortcutFlag
+               appleScriptId:(NSString *)appleScriptId
+                        note:(NSString *)note {
     NSMutableDictionary *rule = [[NSMutableDictionary alloc] init];
     rule[@"direction"] = direction;
     rule[@"filter"] = filter;
     rule[@"filterType"] = @(filterType);
     rule[@"actionType"] = @(actionType);
+    rule[@"contextScope"] = contextScope == CONTEXT_SCOPE_LINK ? @"link" : @"any";
     if (actionType == ACTION_TYPE_SHORTCUT) {
         rule[@"shortcut_code"] = @(shortcutKeyCode);
         rule[@"shortcut_flag"] = @(shortcutFlag);
@@ -341,6 +421,7 @@ static inline void pressKeyWithFlags(CGKeyCode virtualKey, CGEventFlags flags) {
     self = [super init];
     if (self) {
         _rulesList = [[NSMutableArray alloc] init];
+        self.linkActionExecutor = [MGLinkActionExecutor new];
     }
     
     return self;

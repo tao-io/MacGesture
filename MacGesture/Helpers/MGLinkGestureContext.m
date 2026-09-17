@@ -6,13 +6,13 @@ NSString *const MGAccessibilityURLAttribute = @"url";
 NSString *const MGAccessibilityParentAttribute = @"parent";
 
 static NSURL *MGURLFromAccessibilityValue(id value) {
+    NSURL *url = nil;
     if ([value isKindOfClass:[NSURL class]]) {
-        return [(NSURL *)value absoluteURL];
+        url = [(NSURL *)value absoluteURL];
+    } else if ([value isKindOfClass:[NSString class]]) {
+        url = [[NSURL URLWithString:(NSString *)value] absoluteURL];
     }
-    if ([value isKindOfClass:[NSString class]]) {
-        return [[NSURL URLWithString:(NSString *)value] absoluteURL];
-    }
-    return nil;
+    return url.scheme.length > 0 ? url : nil;
 }
 
 NSURL *MGLinkURLFromAccessibilityElement(id element, MGAccessibilityValueProvider valueProvider) {
@@ -82,6 +82,15 @@ NSURL *MGCopyLinkURLAtPoint(CGPoint point) {
 @end
 
 @implementation MGLinkGestureContext
+
++ (instancetype)sharedContext {
+    static MGLinkGestureContext *context;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        context = [MGLinkGestureContext new];
+    });
+    return context;
+}
 
 - (void)beginWithLinkURL:(NSURL *)linkURL {
     if (self.active) {

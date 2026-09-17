@@ -20,6 +20,8 @@ FOUNDATION_EXPORT NSURL * _Nullable MGCopyLinkURLAtPoint(CGPoint point);
 /// Session-scoped context. The first captured value, including nil, stays frozen until clear.
 @interface MGLinkGestureContext : NSObject
 
++ (instancetype)sharedContext;
+
 @property (nonatomic, readonly, nullable) NSURL *linkURL;
 @property (nonatomic, readonly, getter=isActive) BOOL active;
 

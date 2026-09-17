@@ -13,8 +13,16 @@ typedef enum {
 
 typedef enum {
     ACTION_TYPE_SHORTCUT,
-    ACTION_TYPE_APPLE_SCRIPT
+    ACTION_TYPE_APPLE_SCRIPT,
+    ACTION_TYPE_COPY_LINK_URL,
+    ACTION_TYPE_OPEN_LINK_URL,
+    ACTION_TYPE_OPEN_LINK_URL_IN_NEW_WINDOW
 } ActionType;
+
+typedef enum {
+    CONTEXT_SCOPE_ANY,
+    CONTEXT_SCOPE_LINK
+} ContextScope;
 
 
 - (void)addRuleWithDirection:(NSString *)direction
@@ -24,6 +32,16 @@ typedef enum {
              shortcutKeyCode:(NSUInteger)shortcutKeyCode // when actionType == ACTION_TYPE_SHORTCUT required,or 0
                 shortcutFlag:(NSUInteger)shortcutFlag // when actionType == ACTION_TYPE_SHORTCUT required,or 0
                appleScriptId:(NSString *)appleScriptId // when actionType == ACTION_TYPE_APPLE_SCRIPT required,or nil
+                        note:(NSString *)note;
+
+- (void)addRuleWithDirection:(NSString *)direction
+                      filter:(NSString *)filter
+                  filterType:(FilterType)filterType
+                contextScope:(ContextScope)contextScope
+                  actionType:(ActionType)actionType
+             shortcutKeyCode:(NSUInteger)shortcutKeyCode
+                shortcutFlag:(NSUInteger)shortcutFlag
+               appleScriptId:(NSString *)appleScriptId
                         note:(NSString *)note;
 
 - (void)moveRuleFrom:(NSInteger)from
@@ -40,6 +58,8 @@ typedef enum {
 - (FilterType)filterTypeAtIndex:(NSUInteger)index;
 
 - (ActionType)actionTypeAtIndex:(NSUInteger)index;
+
+- (ContextScope)contextScopeAtIndex:(NSUInteger)index;
 
 - (NSString *)noteAtIndex:(NSUInteger)index;
 
@@ -61,15 +81,29 @@ typedef enum {
 
 - (void)setAppleScriptId:(NSString *)id atIndex:(NSUInteger)index;
 
+- (void)setContextScope:(ContextScope)contextScope atIndex:(NSUInteger)index;
+
+- (void)setLinkActionType:(ActionType)actionType atIndex:(NSUInteger)index;
+
 - (void)setNote:(NSString *)note atIndex:(NSUInteger)index;
 
 - (void)setTriggerOnEveryMatch:(BOOL)match atIndex:(NSUInteger)index;
 
 - (BOOL)handleGesture:(NSString *)gesture isLastGesture:(BOOL)last;
 
+- (BOOL)handleGesture:(NSString *)gesture
+        isLastGesture:(BOOL)last
+              linkURL:(NSURL *)linkURL
+          frontBundle:(NSString *)frontBundle;
+
 - (void)toggleRule:(NSUInteger)index;
 
 - (NSInteger)suitedRuleWithGesture:(NSString *)gesture;
+
+- (NSInteger)suitedRuleWithGesture:(NSString *)gesture
+                       frontBundle:(NSString *)frontBundle
+                           linkURL:(NSURL *)linkURL
+                     isLastGesture:(BOOL)last;
 
 - (BOOL)appSuitedRule:(NSString*)bundleId;
 

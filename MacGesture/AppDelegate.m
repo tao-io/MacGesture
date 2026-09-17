@@ -125,7 +125,7 @@ static MGLinkGestureContext *gestureContext;
     }
 
     windowController = [CanvasWindowController new];
-    gestureContext = [MGLinkGestureContext new];
+    gestureContext = [MGLinkGestureContext sharedContext];
     direction = [NSMutableString string];
     _enabled = YES;
 
@@ -282,7 +282,8 @@ static void applyGestureMotion(CGEventRef event) {
 }
 
 static bool handleGesture(BOOL lastGesture) {
-    return [[RulesList sharedRulesList] handleGesture:direction isLastGesture:lastGesture];
+    return [[RulesList sharedRulesList] handleGesture:direction isLastGesture:lastGesture
+        linkURL:gestureContext.linkURL frontBundle:frontBundleName()];
 }
 
 void resetDirection(void) {
