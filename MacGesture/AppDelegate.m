@@ -300,14 +300,14 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
 
     NSEvent *mouseEvent;
     switch (type) {
-        case kCGEventRightMouseDown:
+        case kCGEventRightMouseDown: {
             DebugLog(@"kCGEventRightMouseDown");
+            NSString *frontBundle = frontBundleName();
             // not thread safe, but it's always called on main thread
             // check blocker apps
             //    if(wildLike(frontBundleName(), [defaults stringForKey:@"blockFilter"])){
             if (true)
             {
-                NSString *frontBundle = frontBundleName();
                 if (![BWFilter shouldHookMouseEventForApp:frontBundle] || (![defaults boolForKey:@"showUIInWhateverApp"] && ![[RulesList sharedRulesList] appSuitedRule:frontBundle])) {
 //                        CGEventPost(kCGSessionEventTap, mouseDownEvent);
 //                        if (mouseDraggedEvent) {
@@ -339,7 +339,8 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
                 mouseDownEvent = mouseDraggedEvent = NULL;
             }
             [gestureContext clear];
-            [gestureContext beginWithLinkURL:MGCopyLinkURLAtPoint(CGEventGetLocation(event))];
+            [gestureContext beginWithLinkURL:MGCopyLinkURLAtPointForApplication(
+                CGEventGetLocation(event), frontBundle)];
             mouseEvent = [NSEvent eventWithCGEvent:event];
             mouseDownEvent = event;
             CFRetain(mouseDownEvent);
@@ -351,6 +352,7 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
                 eventTriggered = YES;
             }
             break;
+        }
         case kCGEventRightMouseDragged:
             DebugLog(@"kCGEventRightMouseDragged");
             if (!shouldShow){

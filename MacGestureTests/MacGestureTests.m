@@ -160,6 +160,81 @@ static NSString *MGGestureFromTapEvents(const CGEventType *events, NSUInteger co
     XCTAssertNil(url);
 }
 
+- (void)testArcHoveredLinkJavaScriptSearchesDeepestFirstAndAppleScriptEscapesIt {
+    NSString *javascript = MGArcHoveredLinkJavaScript();
+    XCTAssertTrue([javascript containsString:@"document.querySelectorAll(':hover')"]);
+    XCTAssertTrue([javascript containsString:@"elements.length-1"]);
+    XCTAssertTrue([javascript containsString:@"closest('a[href]')"]);
+    XCTAssertTrue([javascript containsString:@"link.href"]);
+    XCTAssertTrue([javascript containsString:@"return ''"]);
+
+    NSString *source = MGArcAppleScriptSourceForJavaScript(
+        @"const value = \"a\\b\";\nreturn value;");
+    XCTAssertTrue([source containsString:@"tell application id \"company.thebrowser.Browser\""]);
+    XCTAssertTrue([source containsString:@"execute active tab of front window javascript"]);
+    XCTAssertTrue([source containsString:@"const value = \\\"a\\\\b\\\";\\nreturn value;"]);
+}
+
+- (void)testValidArcResultBecomesFrozenLinkContext {
+    __block NSUInteger accessibilityCalls = 0;
+    NSURL *url = MGResolveLinkURLAtPoint(CGPointZero, MGArcBrowserBundleIdentifier,
+        ^NSString *(NSString *source, NSError **error) {
+            XCTAssertTrue([source containsString:@"querySelectorAll"]);
+            return @"https://example.com/hovered";
+        }, ^NSURL *(CGPoint point) {
+            accessibilityCalls++;
+            return [NSURL URLWithString:@"https://example.com/accessibility"];
+        });
+
+    MGLinkGestureContext *context = [MGLinkGestureContext new];
+    [context beginWithLinkURL:url];
+    [context beginWithLinkURL:[NSURL URLWithString:@"https://example.com/moved"]];
+
+    XCTAssertEqual(accessibilityCalls, (NSUInteger)0);
+    XCTAssertEqualObjects(context.linkURL.absoluteString, @"https://example.com/hovered");
+}
+
+- (void)testEmptyInvalidAndErrorArcResultsFallBackToAccessibility {
+    NSArray<MGArcScriptExecutor> *executors = @[
+        ^NSString *(NSString *source, NSError **error) { return @""; },
+        ^NSString *(NSString *source, NSError **error) { return @"not a URL"; },
+        ^NSString *(NSString *source, NSError **error) {
+            if (error != NULL) {
+                *error = [NSError errorWithDomain:@"test" code:1 userInfo:nil];
+            }
+            return @"https://example.com/ignored-because-of-error";
+        },
+    ];
+
+    for (MGArcScriptExecutor executor in executors) {
+        __block NSUInteger accessibilityCalls = 0;
+        NSURL *url = MGResolveLinkURLAtPoint(CGPointZero, MGArcBrowserBundleIdentifier,
+            executor, ^NSURL *(CGPoint point) {
+                accessibilityCalls++;
+                return [NSURL URLWithString:@"https://example.com/accessibility"];
+            });
+        XCTAssertEqual(accessibilityCalls, (NSUInteger)1);
+        XCTAssertEqualObjects(url.absoluteString, @"https://example.com/accessibility");
+    }
+}
+
+- (void)testNonArcApplicationUsesAccessibilityWithoutRunningScript {
+    __block NSUInteger scriptCalls = 0;
+    __block NSUInteger accessibilityCalls = 0;
+    NSURL *url = MGResolveLinkURLAtPoint(CGPointZero, @"com.apple.Safari",
+        ^NSString *(NSString *source, NSError **error) {
+            scriptCalls++;
+            return @"https://example.com/arc";
+        }, ^NSURL *(CGPoint point) {
+            accessibilityCalls++;
+            return [NSURL URLWithString:@"https://example.com/accessibility"];
+        });
+
+    XCTAssertEqual(scriptCalls, (NSUInteger)0);
+    XCTAssertEqual(accessibilityCalls, (NSUInteger)1);
+    XCTAssertEqualObjects(url.absoluteString, @"https://example.com/accessibility");
+}
+
 - (void)testGestureContextFreezesInitialLinkUntilCleared {
     MGLinkGestureContext *context = [MGLinkGestureContext new];
     NSURL *initialURL = [NSURL URLWithString:@"https://example.com/initial"];

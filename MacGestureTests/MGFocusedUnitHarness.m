@@ -15,8 +15,62 @@ static void TestLinkContext(void) {
     NSCAssert(MGLinkURLFromAccessibilityElement(@{ @"role": @"AXButton" }, provider) == nil,
         @"A non-link must not resolve");
 
+    NSString *javascript = MGArcHoveredLinkJavaScript();
+    NSCAssert([javascript containsString:@"document.querySelectorAll(':hover')"],
+        @"Arc must query the hover chain");
+    NSCAssert([javascript containsString:@"elements.length-1"]
+        && [javascript containsString:@"closest('a[href]')"],
+        @"Arc must search the deepest hovered anchor first");
+    NSString *source = MGArcAppleScriptSourceForJavaScript(
+        @"const value = \"a\\b\";\nreturn value;");
+    NSCAssert([source containsString:@"const value = \\\"a\\\\b\\\";\\nreturn value;"],
+        @"JavaScript must be escaped inside the AppleScript string");
+
+    __block NSUInteger accessibilityCalls = 0;
+    NSURL *arcURL = MGResolveLinkURLAtPoint(CGPointZero, MGArcBrowserBundleIdentifier,
+        ^NSString *(NSString *scriptSource, NSError **error) {
+            return @"https://example.com/hovered";
+        }, ^NSURL *(CGPoint point) {
+            accessibilityCalls++;
+            return [NSURL URLWithString:@"https://example.com/accessibility"];
+        });
+    NSCAssert([arcURL.absoluteString isEqualToString:@"https://example.com/hovered"]
+        && accessibilityCalls == 0, @"A valid Arc result must win");
+
+    NSArray<MGArcScriptExecutor> *failedExecutors = @[
+        ^NSString *(NSString *scriptSource, NSError **error) { return @""; },
+        ^NSString *(NSString *scriptSource, NSError **error) { return @"not a URL"; },
+        ^NSString *(NSString *scriptSource, NSError **error) {
+            if (error != NULL) *error = [NSError errorWithDomain:@"test" code:1 userInfo:nil];
+            return @"https://example.com/ignored-because-of-error";
+        },
+    ];
+    for (MGArcScriptExecutor executor in failedExecutors) {
+        accessibilityCalls = 0;
+        NSURL *fallbackURL = MGResolveLinkURLAtPoint(CGPointZero, MGArcBrowserBundleIdentifier,
+            executor, ^NSURL *(CGPoint point) {
+                accessibilityCalls++;
+                return [NSURL URLWithString:@"https://example.com/accessibility"];
+            });
+        NSCAssert(accessibilityCalls == 1
+            && [fallbackURL.absoluteString isEqualToString:@"https://example.com/accessibility"],
+            @"Arc failure must fall back to Accessibility");
+    }
+
+    __block NSUInteger scriptCalls = 0;
+    NSURL *nonArcURL = MGResolveLinkURLAtPoint(CGPointZero, @"com.apple.Safari",
+        ^NSString *(NSString *scriptSource, NSError **error) {
+            scriptCalls++;
+            return @"https://example.com/arc";
+        }, ^NSURL *(CGPoint point) {
+            return [NSURL URLWithString:@"https://example.com/accessibility"];
+        });
+    NSCAssert(scriptCalls == 0
+        && [nonArcURL.absoluteString isEqualToString:@"https://example.com/accessibility"],
+        @"Non-Arc apps must use Accessibility directly");
+
     MGLinkGestureContext *context = [MGLinkGestureContext new];
-    NSURL *initialURL = [NSURL URLWithString:@"https://example.com/initial"];
+    NSURL *initialURL = arcURL;
     [context beginWithLinkURL:initialURL];
     [context beginWithLinkURL:[NSURL URLWithString:@"https://example.com/moved"]];
     NSCAssert([context.linkURL isEqual:initialURL], @"The first URL must stay frozen");

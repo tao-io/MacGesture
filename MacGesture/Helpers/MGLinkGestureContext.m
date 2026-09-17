@@ -4,6 +4,29 @@
 NSString *const MGAccessibilityRoleAttribute = @"role";
 NSString *const MGAccessibilityURLAttribute = @"url";
 NSString *const MGAccessibilityParentAttribute = @"parent";
+NSString *const MGArcBrowserBundleIdentifier = @"company.thebrowser.Browser";
+
+NSString *MGArcHoveredLinkJavaScript(void) {
+    return @"(()=>{const elements=document.querySelectorAll(':hover');"
+        "for(let i=elements.length-1;i>=0;i--){"
+        "const link=elements[i].closest('a[href]');"
+        "if(link){return link.href||'';}}return '';})()";
+}
+
+static NSString *MGAppleScriptQuotedString(NSString *value) {
+    NSString *escaped = [value stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+    escaped = [escaped stringByReplacingOccurrencesOfString:@"\r" withString:@"\\r"];
+    return [escaped stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
+}
+
+NSString *MGArcAppleScriptSourceForJavaScript(NSString *javascript) {
+    return [NSString stringWithFormat:
+        @"tell application id \"%@\"\n"
+         "return execute active tab of front window javascript \"%@\"\n"
+         "end tell",
+        MGArcBrowserBundleIdentifier, MGAppleScriptQuotedString(javascript)];
+}
 
 static NSURL *MGURLFromAccessibilityValue(id value) {
     NSURL *url = nil;
@@ -72,6 +95,61 @@ NSURL *MGCopyLinkURLAtPoint(CGPoint point) {
             return MGCopyAccessibilityValue(item, attribute);
         });
     return url;
+}
+
+static NSURL *MGUsableURLFromString(NSString *value) {
+    if (![value isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    NSString *trimmed = [value stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (trimmed.length == 0) {
+        return nil;
+    }
+    NSURL *url = [[NSURL URLWithString:trimmed] absoluteURL];
+    return url.scheme.length > 0 && url.absoluteString.length > 0 ? url : nil;
+}
+
+NSURL *MGResolveLinkURLAtPoint(
+    CGPoint point,
+    NSString *bundleIdentifier,
+    MGArcScriptExecutor scriptExecutor,
+    MGLinkAtPointResolver accessibilityResolver) {
+    if ([bundleIdentifier isEqualToString:MGArcBrowserBundleIdentifier]
+        && scriptExecutor != nil) {
+        NSError *error = nil;
+        NSString *value = scriptExecutor(
+            MGArcAppleScriptSourceForJavaScript(MGArcHoveredLinkJavaScript()), &error);
+        NSURL *url = error == nil ? MGUsableURLFromString(value) : nil;
+        if (url != nil) {
+            return url;
+        }
+    }
+    return accessibilityResolver != nil ? accessibilityResolver(point) : nil;
+}
+
+static NSString *MGExecuteArcAppleScript(NSString *source, NSError **error) {
+    NSDictionary *errorInfo = nil;
+    NSAppleScript *script = [[NSAppleScript alloc] initWithSource:source];
+    NSAppleEventDescriptor *result = [script executeAndReturnError:&errorInfo];
+    if (errorInfo != nil) {
+        if (error != NULL) {
+            NSInteger code = [errorInfo[NSAppleScriptErrorNumber] integerValue];
+            *error = [NSError errorWithDomain:@"MGArcAppleScriptError"
+                code:code userInfo:errorInfo];
+        }
+        return nil;
+    }
+    return result.stringValue;
+}
+
+NSURL *MGCopyLinkURLAtPointForApplication(CGPoint point, NSString *bundleIdentifier) {
+    return MGResolveLinkURLAtPoint(point, bundleIdentifier,
+        ^NSString *(NSString *source, NSError **error) {
+            return MGExecuteArcAppleScript(source, error);
+        }, ^NSURL *(CGPoint accessibilityPoint) {
+            return MGCopyLinkURLAtPoint(accessibilityPoint);
+        });
 }
 
 @interface MGLinkGestureContext ()
