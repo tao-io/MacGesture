@@ -12,6 +12,13 @@
 		06B87A1A27383985003239A5 /* Foundation+BetterNSCopying.m in Sources */ = {isa = PBXBuildFile; fileRef = 06B87A1827383985003239A5 /* Foundation+BetterNSCopying.m */; };
 		A7C31B2E9F4D4A11B8E21C01 /* MGGestureEventRouter.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */; };
 		A7C31B2E9F4D4A11B8E21C04 /* MGGestureEventRouter.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */; };
+		A7C31B2E9F4D4A11B8E21C05 /* MGLinkGestureContext.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C07 /* MGLinkGestureContext.m */; };
+		A7C31B2E9F4D4A11B8E21C06 /* MGLinkGestureContext.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C07 /* MGLinkGestureContext.m */; };
+		A7C31B2E9F4D4A11B8E21C09 /* MGLinkActionExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C0B /* MGLinkActionExecutor.m */; };
+		A7C31B2E9F4D4A11B8E21C0A /* MGLinkActionExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = A7C31B2E9F4D4A11B8E21C0B /* MGLinkActionExecutor.m */; };
+		A7C31B2E9F4D4A11B8E21C0D /* RulesList.m in Sources */ = {isa = PBXBuildFile; fileRef = 26418733B12703C123D16E95 /* RulesList.m */; };
+		A7C31B2E9F4D4A11B8E21C0E /* AppleScriptsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 88331A3A1C9D22290064ADD5 /* AppleScriptsList.m */; };
+		A7C31B2E9F4D4A11B8E21C0F /* utils.m in Sources */ = {isa = PBXBuildFile; fileRef = 26418F4D8FB5BC803E3EB850 /* utils.m */; };
 		1381E4AC1824E7E800E815F5 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1381E4AB1824E7E800E815F5 /* Cocoa.framework */; };
 		1381E4B81824E7E800E815F5 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1381E4B71824E7E800E815F5 /* main.m */; };
 		1381E4BF1824E7E800E815F5 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1381E4BE1824E7E800E815F5 /* AppDelegate.m */; };
@@ -53,6 +60,10 @@
 		06B87A1927383985003239A5 /* Foundation+BetterNSCopying.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Foundation+BetterNSCopying.h"; sourceTree = "<group>"; };
 		A7C31B2E9F4D4A11B8E21C02 /* MGGestureEventRouter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MGGestureEventRouter.h; sourceTree = "<group>"; };
 		A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MGGestureEventRouter.m; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C07 /* MGLinkGestureContext.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MGLinkGestureContext.m; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C08 /* MGLinkGestureContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MGLinkGestureContext.h; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C0B /* MGLinkActionExecutor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MGLinkActionExecutor.m; sourceTree = "<group>"; };
+		A7C31B2E9F4D4A11B8E21C0C /* MGLinkActionExecutor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MGLinkActionExecutor.h; sourceTree = "<group>"; };
 		1381E4AB1824E7E800E815F5 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		1381E4B31824E7E800E815F5 /* MacGesture-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "MacGesture-Info.plist"; sourceTree = "<group>"; };
 		1381E4B71824E7E800E815F5 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = main.m; sourceTree = "<group>"; usesTabs = 0; };
@@ -295,6 +306,10 @@
 				264180FBF385AF13387254C2 /* SRRecorderControlWithTagid.m */,
 				A7C31B2E9F4D4A11B8E21C02 /* MGGestureEventRouter.h */,
 				A7C31B2E9F4D4A11B8E21C03 /* MGGestureEventRouter.m */,
+				A7C31B2E9F4D4A11B8E21C08 /* MGLinkGestureContext.h */,
+				A7C31B2E9F4D4A11B8E21C07 /* MGLinkGestureContext.m */,
+				A7C31B2E9F4D4A11B8E21C0C /* MGLinkActionExecutor.h */,
+				A7C31B2E9F4D4A11B8E21C0B /* MGLinkActionExecutor.m */,
 				26418C419A597E159158ED0D /* utils.h */,
 				26418F4D8FB5BC803E3EB850 /* utils.m */,
 			);
@@ -439,6 +454,8 @@
 				1381E4B81824E7E800E815F5 /* main.m in Sources */,
 				1381E4BF1824E7E800E815F5 /* AppDelegate.m in Sources */,
 				A7C31B2E9F4D4A11B8E21C01 /* MGGestureEventRouter.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C05 /* MGLinkGestureContext.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C09 /* MGLinkActionExecutor.m in Sources */,
 				88331A3B1C9D22290064ADD5 /* AppleScriptsList.m in Sources */,
 				06B87A1A27383985003239A5 /* Foundation+BetterNSCopying.m in Sources */,
 				BB004AFA25BD001900A7373F /* DBPrefsWindowController.m in Sources */,
@@ -463,6 +480,11 @@
 			files = (
 				1381E4D61824E7E800E815F5 /* MacGestureTests.m in Sources */,
 				A7C31B2E9F4D4A11B8E21C04 /* MGGestureEventRouter.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C06 /* MGLinkGestureContext.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C0A /* MGLinkActionExecutor.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C0D /* RulesList.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C0E /* AppleScriptsList.m in Sources */,
+				A7C31B2E9F4D4A11B8E21C0F /* utils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

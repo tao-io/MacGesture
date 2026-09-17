@@ -595,6 +595,22 @@
                                         <action selector="addAppleScriptRule:" target="-2" id="7w3-V3-woq"/>
                                     </connections>
                                 </menuItem>
+                                <menuItem isSeparatorItem="YES" id="MACG-3-separator"/>
+                                <menuItem title="Add a Copy Link URL Rule" id="MACG-3-copy-link">
+                                    <connections>
+                                        <action selector="addCopyLinkRule:" target="-2" id="MACG-3-copy-link-action"/>
+                                    </connections>
+                                </menuItem>
+                                <menuItem title="Add an Open Link URL Rule" id="MACG-3-open-link">
+                                    <connections>
+                                        <action selector="addOpenLinkRule:" target="-2" id="MACG-3-open-link-action"/>
+                                    </connections>
+                                </menuItem>
+                                <menuItem title="Add an Open Link in New Window Rule" id="MACG-3-new-window">
+                                    <connections>
+                                        <action selector="addOpenLinkInNewWindowRule:" target="-2" id="MACG-3-new-window-action"/>
+                                    </connections>
+                                </menuItem>
                             </items>
                         </menu>
                     </popUpButtonCell>

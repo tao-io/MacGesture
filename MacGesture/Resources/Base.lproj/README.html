@@ -361,6 +361,7 @@ kbd {
 <li>Global mouse gestures recognition</li>
 <li>Configurable shortcut invocation by gesture</li>
 <li>App filtering based on bundle identifiers</li>
+<li>Link-scoped rules that can copy or open the link under the pointer</li>
 </ul>
 
 <h2 id="toc_6">Gestures Format</h2>
@@ -437,6 +438,14 @@ Some shortcuts still don&#39;t work with the fix above. When you are encounterin
 </ul>
 
 <h2 id="toc_10">Tips</h2>
+
+<h3>Link gestures</h3>
+
+<p>Use the add-rule menu to add a Copy Link URL, Open Link URL, or Open Link in New Window rule. These rules use the <code>Link</code> scope. MacGesture captures the link under the pointer when the right-button gesture starts. It keeps that URL until the gesture ends, even if the pointer moves.</p>
+
+<p>MacGesture does not add a link rule by default. If no link is present at gesture start, it skips each link-scoped rule and tries the next matching rule.</p>
+
+<p>The New Window action uses Arc&#39;s AppleScript interface when the gesture starts in Arc. Other apps do not have one common new-window interface, so MacGesture uses the normal macOS open action as a fallback.</p>
 
 <h3 id="toc_11">Basic gestures</h3>
 

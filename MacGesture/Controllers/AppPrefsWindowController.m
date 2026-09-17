@@ -217,6 +217,18 @@ static BOOL isBigSur = NO;
     _rulesTableView.rowHeight = 36;
     _appleScriptTableView.rowHeight = 36;
 
+    if ([_rulesTableView tableColumnWithIdentifier:@"Scope"] == nil) {
+        NSTableColumn *scopeColumn = [[NSTableColumn alloc] initWithIdentifier:@"Scope"];
+        scopeColumn.title = NSLocalizedString(@"Scope", nil);
+        scopeColumn.width = 68;
+        scopeColumn.minWidth = 60;
+        [_rulesTableView addTableColumn:scopeColumn];
+        [_rulesTableView moveColumn:_rulesTableView.numberOfColumns - 1 toColumn:2];
+        [_rulesTableView tableColumnWithIdentifier:@"Gesture"].width = 80;
+        [_rulesTableView tableColumnWithIdentifier:@"Filter"].width = 145;
+        [_rulesTableView tableColumnWithIdentifier:@"Note"].width = 90;
+    }
+
     [_rulesTableView registerForDraggedTypes:@[ MacGestureRuleDataType ]];
 }
 
@@ -283,6 +295,28 @@ static BOOL isBigSur = NO;
 - (IBAction)addAppleScriptRule:(id)sender {
     [[RulesList sharedRulesList] addRuleWithDirection:@"DR" filter:@"*safari|*chrome" filterType:FILTER_TYPE_WILDCARD actionType:ACTION_TYPE_APPLE_SCRIPT shortcutKeyCode:0 shortcutFlag:0 appleScriptId:@"" note:@"note"];
     [_rulesTableView reloadData];
+}
+
+- (void)addLinkRuleWithActionType:(ActionType)actionType note:(NSString *)note {
+    [[RulesList sharedRulesList] addRuleWithDirection:@"DR" filter:@"*"
+        filterType:FILTER_TYPE_WILDCARD contextScope:CONTEXT_SCOPE_LINK
+        actionType:actionType shortcutKeyCode:0 shortcutFlag:0 appleScriptId:nil note:note];
+    [_rulesTableView reloadData];
+}
+
+- (IBAction)addCopyLinkRule:(id)sender {
+    [self addLinkRuleWithActionType:ACTION_TYPE_COPY_LINK_URL
+        note:NSLocalizedString(@"Copy Link URL", nil)];
+}
+
+- (IBAction)addOpenLinkRule:(id)sender {
+    [self addLinkRuleWithActionType:ACTION_TYPE_OPEN_LINK_URL
+        note:NSLocalizedString(@"Open Link URL", nil)];
+}
+
+- (IBAction)addOpenLinkInNewWindowRule:(id)sender {
+    [self addLinkRuleWithActionType:ACTION_TYPE_OPEN_LINK_URL_IN_NEW_WINDOW
+        note:NSLocalizedString(@"Open Link URL in New Window", nil)];
 }
 
 - (IBAction)removeRule:(id)sender {
@@ -647,6 +681,16 @@ static NSString *currentScriptId = nil;
     [[RulesList sharedRulesList] setTriggerOnEveryMatch:trigger atIndex:index];
 }
 
+- (IBAction)contextScopeChanged:(NSPopUpButton *)sender {
+    [[RulesList sharedRulesList] setContextScope:(ContextScope)sender.selectedItem.tag
+        atIndex:(NSUInteger)sender.tag];
+}
+
+- (IBAction)linkActionChanged:(NSPopUpButton *)sender {
+    [[RulesList sharedRulesList] setLinkActionType:(ActionType)sender.selectedItem.tag
+        atIndex:(NSUInteger)sender.tag];
+}
+
 - (void)tableViewSelectionChanged:(NSNotification* )notification
 {
     NSInteger selectedRow = [_appleScriptTableView selectedRow];
@@ -899,16 +943,16 @@ static NSString *currentScriptId = nil;
 
     BOOL isEnabled = [rulesList enabledAtIndex:row];
 
-    NSDictionary<NSString *, NSNumber *> *columns =
-        @{ @"Gesture": @1, @"Filter": @2, @"Note": @3, @"Action": @4, @"TriggerOnEveryMatch": @5 };
-    NSInteger thisColumn = columns[column.identifier].integerValue;
+    NSString *identifier = column.identifier;
 
-    if (thisColumn >= 1 && thisColumn <= 3) { // Gesture, Filter, Note
+    if ([identifier isEqualToString:@"Gesture"]
+        || [identifier isEqualToString:@"Filter"]
+        || [identifier isEqualToString:@"Note"]) {
 
         NSString *stringValue = nil;
-        if      (thisColumn == 1) stringValue = [rulesList directionAtIndex:row];
-        else if (thisColumn == 2) stringValue = [rulesList filterAtIndex:row];
-        else if (thisColumn == 3) stringValue = [rulesList noteAtIndex:row];
+        if ([identifier isEqualToString:@"Gesture"]) stringValue = [rulesList directionAtIndex:row];
+        else if ([identifier isEqualToString:@"Filter"]) stringValue = [rulesList filterAtIndex:row];
+        else stringValue = [rulesList noteAtIndex:row];
 
         NSTextField *textField = [NSTextField new];
         textField.cell = [VerticalTextFieldCell new];
@@ -924,7 +968,21 @@ static NSString *currentScriptId = nil;
         textField.tag = row;
         result = textField;
 
-    } else if (thisColumn == 4) { // Action
+    } else if ([identifier isEqualToString:@"Scope"]) {
+
+        NSPopUpButton *scopeButton = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
+        [scopeButton addItemWithTitle:NSLocalizedString(@"Any", nil)];
+        scopeButton.lastItem.tag = CONTEXT_SCOPE_ANY;
+        [scopeButton addItemWithTitle:NSLocalizedString(@"Link", nil)];
+        scopeButton.lastItem.tag = CONTEXT_SCOPE_LINK;
+        [scopeButton selectItemWithTag:[rulesList contextScopeAtIndex:row]];
+        scopeButton.tag = row;
+        scopeButton.target = self;
+        scopeButton.action = @selector(contextScopeChanged:);
+        scopeButton.enabled = isEnabled;
+        result = scopeButton;
+
+    } else if ([identifier isEqualToString:@"Action"]) {
 
         if ([rulesList actionTypeAtIndex:row] == ACTION_TYPE_SHORTCUT) {
 
@@ -964,9 +1022,23 @@ static NSString *currentScriptId = nil;
                     name:NSComboBoxSelectionDidChangeNotification object:comboBox];
 
             result = comboBox;
+        } else {
+            NSPopUpButton *actionButton = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
+            [actionButton addItemWithTitle:NSLocalizedString(@"Copy URL", nil)];
+            actionButton.lastItem.tag = ACTION_TYPE_COPY_LINK_URL;
+            [actionButton addItemWithTitle:NSLocalizedString(@"Open URL", nil)];
+            actionButton.lastItem.tag = ACTION_TYPE_OPEN_LINK_URL;
+            [actionButton addItemWithTitle:NSLocalizedString(@"New Window", nil)];
+            actionButton.lastItem.tag = ACTION_TYPE_OPEN_LINK_URL_IN_NEW_WINDOW;
+            [actionButton selectItemWithTag:[rulesList actionTypeAtIndex:row]];
+            actionButton.tag = row;
+            actionButton.target = self;
+            actionButton.action = @selector(linkActionChanged:);
+            actionButton.enabled = isEnabled;
+            result = actionButton;
         }
 
-    } else if (thisColumn == 5) { // Trigger
+    } else if ([identifier isEqualToString:@"TriggerOnEveryMatch"]) {
 
         NSButton *checkButton = [NSButton new];
         [checkButton setButtonType:NSSwitchButton];
