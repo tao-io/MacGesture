@@ -56,9 +56,15 @@ jobs:
             -scmProvider system \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Upload MacGesture.app
+      - name: Package MacGesture.app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            DerivedData/Build/Products/Debug/MacGesture.app \
+            MacGesture.app.zip
+
+      - name: Upload MacGesture.app.zip
         uses: actions/upload-artifact@v4
         with:
-          name: MacGesture.app
-          path: DerivedData/Build/Products/Release/MacGesture.app
+          name: MacGesture.app.zip
+          path: MacGesture.app.zip
           if-no-files-found: error
