@@ -26,6 +26,7 @@ Simply use `brew install --cask macgesture`. 🙌
 - Global mouse gestures recognition
 - Configurable shortcut invocation by gesture
 - App filtering based on bundle identifiers
+- Link-scoped rules that can copy or open the link under the pointer
 
 ## Gestures Format
 
@@ -69,6 +70,14 @@ Some shortcuts still don't work with the fix above. When you are encountering th
 - Tick “Invert Fn When Control Is Pressed” option.
 
 ## Tips
+
+### Link gestures
+
+Use the add-rule menu to add a Copy Link URL, Open Link URL, or Open Link in New Window rule. These rules use the `Link` scope. MacGesture captures the link under the pointer when the right-button gesture starts. It keeps that URL until the gesture ends, even if the pointer moves.
+
+MacGesture does not add a link rule by default. If no link is present at gesture start, it skips each link-scoped rule and tries the next matching rule.
+
+The New Window action uses Arc's AppleScript interface when the gesture starts in Arc. Other apps do not have one common new-window interface, so MacGesture uses the normal macOS open action as a fallback.
 
 ### Basic gestures
 
